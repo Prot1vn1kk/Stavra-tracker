@@ -407,7 +407,7 @@ export function StavraApp() {
                       <span>Дистанция</span>
                       <input
                         type="number"
-                        step="0.1"
+                        step="any"
                         min="0.5"
                         max="100"
                         value={distanceKm}
@@ -438,7 +438,7 @@ export function StavraApp() {
                       <span>Время</span>
                       <input
                         type="number"
-                        step="5"
+                        step="any"
                         min="5"
                         max="600"
                         value={durationMinutes}
