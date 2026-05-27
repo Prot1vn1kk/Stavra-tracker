@@ -218,26 +218,109 @@ export function getDistrict(value: string) {
 }
 
 /**
- * Scale preset route polygon around its centroid to match targetKm.
- * Adds slight wobble per vertex to look natural.
+ * Interpolate N evenly-spaced points along a polyline segment.
+ */
+function interpolateSegment(a: GeoPoint, b: GeoPoint, steps: number): GeoPoint[] {
+  const pts: GeoPoint[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    pts.push({ lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t });
+  }
+  return pts;
+}
+
+/**
+ * Densely interpolate a route so every segment has at least one point per ~50 m.
+ */
+function densifyRoute(points: GeoPoint[]): GeoPoint[] {
+  if (points.length < 2) return points;
+  const result: GeoPoint[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const segKm = routeDistanceKm([points[i], points[i + 1]]);
+    const steps = Math.max(4, Math.ceil(segKm / 0.05)); // one point each ~50m
+    const seg = interpolateSegment(points[i], points[i + 1], steps);
+    if (i === 0) result.push(...seg);
+    else result.push(...seg.slice(1)); // avoid duplicating shared endpoints
+  }
+  return result;
+}
+
+/**
+ * Simple seeded pseudo-random based on index for deterministic organic noise.
+ */
+function seededNoise(seed: number): number {
+  // Simple LCG hash — deterministic, no external deps
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x); // 0..1
+}
+
+/**
+ * Generate a realistic running route that matches targetKm.
+ *
+ * Strategy:
+ * - Densely interpolate the base preset route (many waypoints).
+ * - Compute the cumulative distance along it.
+ * - Walk only as many points as needed to reach targetKm (partial traversal).
+ *   For distances larger than the base loop, loop the route.
+ * - Apply small organic noise so it never looks like a clean geometric shape.
  */
 export function scaleRouteToDistance(points: GeoPoint[], targetKm: number): GeoPoint[] {
   if (points.length < 2) return points;
-  const currentKm = routeDistanceKm(points) || 1;
-  const factor = targetKm / currentKm;
 
-  const center = points.reduce(
-    (acc, p) => ({ lat: acc.lat + p.lat / points.length, lng: acc.lng + p.lng / points.length }),
-    { lat: 0, lng: 0 }
-  );
+  // Densify base route and close the loop
+  const closed = [...points];
+  if (closed[0].lat !== closed[closed.length - 1].lat || closed[0].lng !== closed[closed.length - 1].lng) {
+    closed.push(closed[0]); // close the polygon
+  }
+  const dense = densifyRoute(closed);
 
-  return points.map((p, i) => {
-    const wobble = Math.sin(i * 2.094) * 0.0005 * factor;
+  // Build cumulative distance table
+  const cumDist: number[] = [0];
+  for (let i = 1; i < dense.length; i++) {
+    cumDist.push(cumDist[i - 1] + routeDistanceKm([dense[i - 1], dense[i]]));
+  }
+  const loopKm = cumDist[cumDist.length - 1] || 1;
+
+  // How many full loops + remainder
+  const fullLoops = Math.floor(targetKm / loopKm);
+  const remainder = targetKm - fullLoops * loopKm;
+
+  // Collect required points
+  const collected: GeoPoint[] = [];
+  for (let loop = 0; loop <= fullLoops; loop++) {
+    const maxDist = loop < fullLoops ? loopKm : remainder;
+    for (let i = 0; i < dense.length; i++) {
+      if (cumDist[i] > maxDist + 0.001) break;
+      collected.push(dense[i]);
+    }
+  }
+
+  if (collected.length < 2) return points;
+
+  // Apply small organic noise — amplitude ~15-25 m, seeded per index so it's stable
+  const noiseMagnitude = 0.00012; // ~13 m in lat/lng degrees
+  const result: GeoPoint[] = collected.map((p, i) => {
+    // Two independent noise channels for lat / lng
+    const nLat = (seededNoise(i * 3 + 1) - 0.5) * 2 * noiseMagnitude;
+    const nLng = (seededNoise(i * 3 + 2) - 0.5) * 2 * noiseMagnitude * 1.6; // lng degree is narrower near Moscow
+    // Smooth the noise with a sine envelope so start/end are clean
+    const envelope = Math.sin((Math.PI * i) / collected.length);
     return {
-      lat: center.lat + (p.lat - center.lat) * factor + wobble,
-      lng: center.lng + (p.lng - center.lng) * factor - wobble,
+      lat: p.lat + nLat * envelope,
+      lng: p.lng + nLng * envelope,
     };
   });
+
+  // Thin the result to ~150 points max to keep rendering fast
+  const maxPts = 150;
+  if (result.length <= maxPts) return result;
+  const step = result.length / maxPts;
+  const thinned: GeoPoint[] = [];
+  for (let i = 0; i < maxPts; i++) {
+    thinned.push(result[Math.round(i * step)]);
+  }
+  thinned.push(result[result.length - 1]); // always keep last point
+  return thinned;
 }
 
 /**
