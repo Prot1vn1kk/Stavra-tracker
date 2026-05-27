@@ -459,7 +459,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--orange);
 
 /* ─── Auth form ─── */
 .auth-overlay {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: 9999;
   background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
   display: grid; place-items: center; padding: 20px;
 }
@@ -508,6 +508,11 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--orange);
 .export-btn:hover { opacity: 0.85; }
 .export-hint { font-size: 12px; color: var(--text-muted); text-align: center; }
 
+/* Mobile Tab Bar */
+.mobile-nav {
+  display: none;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1100px) {
   .workspace { grid-template-columns: 240px 1fr; }
@@ -515,8 +520,74 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--orange);
 }
 @media (max-width: 720px) {
   .topbar { padding: 0 16px; }
-  .workspace { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
-  .workspace > :first-child { display: none; }
+  .workspace { grid-template-columns: 1fr; padding: 12px 12px 80px; gap: 12px; }
+  
+  /* Hide all columns by default on mobile */
+  .workspace .sidebar,
+  .workspace .feed,
+  .workspace .history {
+    display: none !important;
+  }
+  
+  /* Show active tab column */
+  .workspace.tab-feed .feed {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+  }
+  .workspace.tab-create .sidebar {
+    display: flex !important;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  .workspace.tab-history .history {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #1c1c1e;
+    border-top: 1px solid var(--border);
+    z-index: 999;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+  }
+  
+  .mobile-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+    height: 100%;
+    justify-content: center;
+    transition: color 0.15s, transform 0.1s;
+  }
+  
+  .mobile-nav__item:active {
+    transform: scale(0.95);
+  }
+  
+  .mobile-nav__item.active {
+    color: var(--orange);
+  }
 }
 
 @media print {

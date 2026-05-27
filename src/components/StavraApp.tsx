@@ -105,6 +105,7 @@ export function StavraApp() {
   const [message, setMessage] = useState("");
   const [filters, setFilters] = useState({ month: "", district: "" });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"feed" | "create" | "history">("feed");
   const messageTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Auto-dismiss message helper
@@ -365,7 +366,7 @@ export function StavraApp() {
       )}
 
       {/* ── Workspace ── */}
-      <section className="workspace">
+      <section className={`workspace tab-${activeTab}`}>
 
         {/* ── LEFT: Sidebar ── */}
         <aside className="sidebar">
@@ -560,6 +561,34 @@ export function StavraApp() {
           </div>
         </div>
       </section>
+
+      {/* ── Mobile Navigation Bar ── */}
+      <nav className="mobile-nav">
+        <button
+          type="button"
+          className={`mobile-nav__item${activeTab === "feed" ? " active" : ""}`}
+          onClick={() => setActiveTab("feed")}
+        >
+          <Activity size={18} />
+          <span>Лента</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav__item${activeTab === "create" ? " active" : ""}`}
+          onClick={() => setActiveTab("create")}
+        >
+          <Plus size={18} />
+          <span>Создать</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-nav__item${activeTab === "history" ? " active" : ""}`}
+          onClick={() => setActiveTab("history")}
+        >
+          <ListRestart size={18} />
+          <span>История</span>
+        </button>
+      </nav>
     </main>
   );
 }
