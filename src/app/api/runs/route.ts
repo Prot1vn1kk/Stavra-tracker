@@ -1,7 +1,7 @@
 import { RunSource } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestSession } from "@/lib/auth";
-import { estimateCalories, paceSecondsPerKm, routeDistanceKm } from "@/lib/metrics";
+import { estimateCalories, paceSecondsPerKm, routeDistanceKm, generateStravaTitle } from "@/lib/metrics";
 import { buildRoute } from "@/lib/routeBuilder";
 import { prisma } from "@/lib/prisma";
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   const run = await prisma.run.create({
     data: {
       userId: session.userId,
-      title: `STAVRA ${district}`,
+      title: generateStravaTitle(startTime, distanceKm, district),
       activityDate,
       startTime,
       durationMinutes,

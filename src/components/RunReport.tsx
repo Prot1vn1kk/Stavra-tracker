@@ -91,6 +91,21 @@ export function RunReport({ run }: { run: ReportRun }) {
           <span className="report__stat-value">{formatDuration(run.durationMinutes)}</span>
           <span className="report__stat-unit">ч мин</span>
         </div>
+        <div className="report__stat">
+          <span className="report__stat-label">Калории</span>
+          <span className="report__stat-value">{run.calories}</span>
+          <span className="report__stat-unit">ккал</span>
+        </div>
+        <div className="report__stat">
+          <span className="report__stat-label">Средний пульс</span>
+          <span className="report__stat-value">{Math.round(130 + (1000 / (run.paceSecondsKm || 300)) * 20)}</span>
+          <span className="report__stat-unit">уд/мин</span>
+        </div>
+        <div className="report__stat">
+          <span className="report__stat-label">Набор высоты</span>
+          <span className="report__stat-value">{Math.round(run.distanceKm * 12)}</span>
+          <span className="report__stat-unit">м</span>
+        </div>
       </div>
 
       {/* Social footer */}

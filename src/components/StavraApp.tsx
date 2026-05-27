@@ -15,6 +15,7 @@ import {
   paceToStr,
   parsePaceStr,
   routeDistanceKm,
+  generateStravaTitle,
 } from "@/lib/metrics";
 import { GeoPoint, getDistrict, MOSCOW_DISTRICTS, scaleRouteToDistance } from "@/lib/moscowRoutes";
 import { RealMap } from "./RealMap";
@@ -245,7 +246,7 @@ export function StavraApp() {
 
     return {
       id: `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      title: `STAVRA ${selectedDistrict.label}`,
+      title: generateStravaTitle(startTime, finalDistKm, selectedDistrict.label),
       activityDate: `${activityDate}T00:00:00.000Z`,
       startTime,
       durationMinutes,
@@ -268,9 +269,7 @@ export function StavraApp() {
   async function handleCreateRun(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setMessage("");
     if (!user) {
-      const run = buildLocalRun();
-      saveLocalRuns([run, ...localRuns]); setSelectedRun(run);
-      showMessage("Тренировка создана локально."); setSaving(false); return;
+      showMessage("Необходима авторизация."); setSaving(false); return;
     }
     try {
       const polyline = routeMode === "points" && manualPoints.length >= 2 ? manualPoints : autoScaledRoute;
@@ -286,9 +285,7 @@ export function StavraApp() {
       const saved = { ...d.run, storage: "cloud" as const };
       setCloudRuns(c => [saved, ...c]); setSelectedRun(saved); showMessage("Сохранено в профиль.");
     } catch (e) {
-      const run = buildLocalRun();
-      saveLocalRuns([run, ...localRuns]); setSelectedRun(run);
-      showMessage((e instanceof Error ? e.message : "Ошибка.") + " Сохранено локально.");
+      showMessage(e instanceof Error ? e.message : "Ошибка.");
     } finally { setSaving(false); }
   }
 
@@ -345,24 +342,10 @@ export function StavraApp() {
       </header>
 
       {/* ── Banners ── */}
-      {!user && (
-        <div className="guest-banner">
-          <Database size={16} />
-          <span>Гостевой режим — данные хранятся в браузере</span>
-          <button type="button" onClick={() => setAuthOpen(true)}>Создать профиль</button>
-        </div>
-      )}
-      {user && localRuns.length > 0 && (
-        <div className="guest-banner">
-          <CloudUpload size={16} />
-          <span>{localRuns.length} локальных записей ожидают переноса</span>
-          <button type="button" onClick={handleSync} disabled={syncing}>{syncing ? "Переношу…" : "Перенести"}</button>
-        </div>
-      )}
 
       {/* ── Auth modal ── */}
-      {authOpen && !user && (
-        <div className="auth-overlay" onClick={e => { if (e.target === e.currentTarget) setAuthOpen(false); }}>
+      {(!user && !loading) && (
+        <div className="auth-overlay">
           <div className="auth-panel">
             <h2>{authMode === "register" ? "Создать аккаунт" : "Войти"}</h2>
             <div className="segmented">

@@ -87,3 +87,27 @@ export function paceToStr(seconds: number): string {
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
+
+export function generateStravaTitle(startTime: string, distanceKm: number, district: string): string {
+  const hour = parseInt(startTime.split(":")[0] || "12", 10);
+  let timeOfDay = "Дневная";
+  if (hour >= 5 && hour < 12) timeOfDay = "Утренняя";
+  else if (hour >= 17 && hour < 22) timeOfDay = "Вечерняя";
+  else if (hour >= 22 || hour < 5) timeOfDay = "Ночная";
+
+  const adjs = ["мощная", "отличная", "интенсивная", "легкая", "уверенная", "бодрая"];
+  const nouns = ["пробежка", "тренировка", "разминка", "работа"];
+
+  const adj = adjs[Math.floor(Math.random() * adjs.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+
+  if (distanceKm > 15) return `${timeOfDay} пробежка на выносливость в ${district}`;
+  if (distanceKm > 10) return `${timeOfDay} длинная пробежка — ${district}`;
+  
+  if (Math.random() > 0.5) {
+    return `${timeOfDay} ${noun} — ${district}`;
+  } else {
+    const capAdj = adj.charAt(0).toUpperCase() + adj.slice(1);
+    return `${capAdj} ${noun} (${district})`;
+  }
+}
