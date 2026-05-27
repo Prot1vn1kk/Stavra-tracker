@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RunSource {
+  MANUAL
+  PLANNED
+  RECORDED
+}
+
+enum RouteSource {
+  PRESET
+  MANUAL_POINTS
+  EXTERNAL_ROUTING
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  weightKg     Float    @default(70)
+  createdAt    DateTime @default(now())
+  runs         Run[]
+}
+
+model Run {
+  id              String    @id @default(cuid())
+  userId          String
+  title           String
+  activityDate    DateTime
+  startTime       String
+  durationMinutes Int
+  district        String
+  distanceKm      Float
+  paceSecondsKm   Int
+  calories        Int
+  source          RunSource @default(MANUAL)
+  isPublic        Boolean   @default(false)
+  note            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  route           Route?
+
+  @@index([userId, activityDate])
+}
+
+model Route {
+  id        String      @id @default(cuid())
+  runId     String      @unique
+  district  String
+  source    RouteSource @default(PRESET)
+  points    Json
+  polyline  Json
+  createdAt DateTime    @default(now())
+  run       Run         @relation(fields: [runId], references: [id], onDelete: Cascade)
+}

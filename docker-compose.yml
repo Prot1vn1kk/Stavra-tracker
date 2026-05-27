@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stavra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stavra
+      POSTGRES_PASSWORD: stavra
+      POSTGRES_DB: stavra
+    ports:
+      - "5432:5432"
+    volumes:
+      - stavra-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  stavra-postgres-data:
